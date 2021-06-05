@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+    <title>
+        Tenparu - TODO List
+    </title>
+    <link rel="template" type="text/html" href="tasktemplate.html">
+</head>
+
+<body>
+    <div id="navi">
+        <h1>
+            Tenparu
+        </h1>
+    </div>
+    <div id="task-list">
+        <form class="task" id="new-task" action="">
+            <div class="task-item-name">
+                <input type="text" name="task-name">
+            </div>
+            <div class="task-item-due">
+                <input type="datetime-local" name="due">
+            </div>
+            <div class="task-item-priority">
+                <select name="priority">
+                    <option>URGENT</option>
+                    <option>HIGH</option>
+                    <option>NORMAL</option>
+                    <option>LOW</option>
+                </select>
+            </div>
+            <div class="task-item-description">
+                <input type="text" name="description">
+            </div>
+            <input type="submit">
+        </form>
+    </div>
+    <template id="task-template">
+        <div class="task">
+            <div class="task-item-name">
+                name
+            </div>
+            <div class="task-item-due">
+                2021-5-15 12:00
+            </div>
+            <div class="task-item-priority">
+                HIGH
+            </div>
+            <div class="task-item-description">
+                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Modi sed
+                architecto, possimus soluta ipsa repudiandae magni aperiam
+                deleniti assumenda quae laudantium officia porro facere rerum enim
+                corporis quia. Dolor, vel.
+            </div>
+        </div>
+    </template>
+    <script src="script.js"></script>
+</body>
+
+</html>
