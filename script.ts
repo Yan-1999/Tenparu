@@ -12,11 +12,11 @@ class Task {
     description: string;
     stage: Stage;
 
-    constructor(name: string,
-        due: Date,
-        priority: string,
-        description: string,
-        stage: Stage) {
+    constructor(name?: string,
+        due?: Date,
+        priority?: string,
+        description?: string,
+        stage?: Stage) {
         this.name = name;
         this.due = due;
         this.priority = priority;
@@ -58,7 +58,10 @@ function addTask(ev: Event) {
     }
     let new_task = new Task(
         name,
-        new Date(data.get('due').toString()),
+        new Date([
+            data.get('due-date').toString(),
+            data.get('due-time').toString(),
+        ].join(' ')),
         data.get('priority').toString(),
         data.get('description').toString(),
         Stage.Todo
@@ -70,5 +73,16 @@ function addTask(ev: Event) {
     return false;
 }
 
+function loadTask() {
+    let tasks = JSON.parse(window.localStorage.getItem(STROAGE_KEY));
+    let div: HTMLDivElement = null;
+    for (const task of tasks) {
+        task.due = new Date(task.due);
+        div = Object.assign(new Task(), task).new_div();
+        task_list.appendChild(div);
+    }
+}
+
 /*main*/
 document.getElementById('new-task').onsubmit = addTask;
+loadTask();

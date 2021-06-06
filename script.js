@@ -45,12 +45,26 @@ function addTask(ev) {
             return false;
         }
     }
-    var new_task = new Task(name, new Date(data.get('due').toString()), data.get('priority').toString(), data.get('description').toString(), Stage.Todo);
+    var new_task = new Task(name, new Date([
+        data.get('due-date').toString(),
+        data.get('due-time').toString(),
+    ].join(' ')), data.get('priority').toString(), data.get('description').toString(), Stage.Todo);
     tasks.push(new_task);
     window.localStorage.setItem(STROAGE_KEY, JSON.stringify(tasks));
     var div = new_task.new_div();
     task_list.appendChild(div);
     return false;
 }
+function loadTask() {
+    var tasks = JSON.parse(window.localStorage.getItem(STROAGE_KEY));
+    var div = null;
+    for (var _i = 0, tasks_2 = tasks; _i < tasks_2.length; _i++) {
+        var task = tasks_2[_i];
+        task.due = new Date(task.due);
+        div = Object.assign(new Task(), task).new_div();
+        task_list.appendChild(div);
+    }
+}
 /*main*/
 document.getElementById('new-task').onsubmit = addTask;
+loadTask();

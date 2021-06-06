@@ -2,6 +2,7 @@
 <html lang="">
 
 <head>
+    <meta charset="UTF-8">
     <title>
         Tenparu - TODO List
     </title>
@@ -20,7 +21,8 @@
                 <input type="text" name="task-name">
             </div>
             <div class="task-item-due">
-                <input type="datetime-local" name="due">
+                <input type="date" name="due-date">
+                <input type="time" name="due-time">
             </div>
             <div class="task-item-priority">
                 <select name="priority">
@@ -33,26 +35,20 @@
             <div class="task-item-description">
                 <input type="text" name="description">
             </div>
-            <input type="submit">
+            <input type="submit" value="Add task">
         </form>
     </div>
     <template id="task-template">
         <div class="task">
             <div class="task-item-name">
-                name
             </div>
             <div class="task-item-due">
-                2021-5-15 12:00
             </div>
             <div class="task-item-priority">
-                HIGH
             </div>
             <div class="task-item-description">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Modi sed
-                architecto, possimus soluta ipsa repudiandae magni aperiam
-                deleniti assumenda quae laudantium officia porro facere rerum enim
-                corporis quia. Dolor, vel.
             </div>
+            <button>Delete</button>
         </div>
     </template>
     <script src="script.js"></script>
