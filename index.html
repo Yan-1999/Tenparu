@@ -1,54 +1,66 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en-US">
 
 <head>
     <meta charset="UTF-8">
     <title>
         Tenparu - TODO List
     </title>
-    <link rel="template" type="text/html" href="tasktemplate.html">
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body>
-    <div id="navi">
+    <div id="title">
         <h1>
             Tenparu
         </h1>
+        <div id="stages">
+        </div>
     </div>
-    <div id="task-list">
-        <form class="task" id="new-task" action="">
-            <div class="task-item-name">
-                <input type="text" name="task-name">
-            </div>
-            <div class="task-item-due">
-                <input type="date" name="due-date">
-                <input type="time" name="due-time">
-            </div>
-            <div class="task-item-priority">
-                <select name="priority">
-                    <option>URGENT</option>
-                    <option>HIGH</option>
-                    <option>NORMAL</option>
-                    <option>LOW</option>
-                </select>
-            </div>
-            <div class="task-item-description">
-                <input type="text" name="description">
-            </div>
-            <input type="submit" value="Add task">
-        </form>
-    </div>
+
+    <form class="task" id="new-task" action="">
+        <div class="task-item-name">
+            <input type="text" name="task-name" required>
+        </div>
+        <div class="task-item-due">
+            <input type="date" name="due-date" required>
+            <input type="time" name="due-time" value="08:00">
+        </div>
+        <div class="task-item-priority">
+            <select name="priority">
+                <option>URGENT</option>
+                <option>HIGH</option>
+                <option>NORMAL</option>
+                <option>LOW</option>
+            </select>
+        </div>
+        <div class="task-item-description">
+            <input type="text" name="description">
+        </div>
+        <input type="submit" value="Add task">
+    </form>
+    <div id="task-list"></div>
     <template id="task-template">
         <div class="task">
-            <div class="task-item-name">
+            <div class="task-checkbox">
+                <input type="checkbox">
             </div>
-            <div class="task-item-due">
+            <div class="task-info">
+                <div class="task-item-name">
+                </div>
+                <div class="task-item-due">
+                </div>
+                <div class="task-item-priority">
+                </div>
+                <div class="task-item-description">
+                </div>
+                <div class="task-item-timeleft">
+                </div>
             </div>
-            <div class="task-item-priority">
-            </div>
-            <div class="task-item-description">
-            </div>
-            <button>Delete</button>
+            <div style="clear: both;"></div>
+            <input type="range" class="task-item-progress" max="10" value="0">
+            <button class="task-item-next">Next</button>
+            <button class="task-item-delete">Delete</button>
         </div>
     </template>
     <script src="script.js"></script>
