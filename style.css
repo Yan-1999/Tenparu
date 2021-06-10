@@ -1,12 +1,19 @@
 :root {
-    color: #222;
-    font-family: 'Source Han Serif';
+    font-family: Georgia, serif;
 }
 
 html {
+    color: #222;
     background: linear-gradient(#e66465, #9198e5);
     font-size: 24px;
     min-height: 100vh;
+}
+
+button {
+    background: none;
+    border: none;
+    color: #e66465;
+    font-size: 1rem;
 }
 
 #title {
@@ -16,31 +23,68 @@ html {
     text-align: center;
 }
 
-input {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    height: 1.5rem;
-    width: 100%;
+#stages, #manipulation {
+    font-family: inherit;
+    text-align: center;
 }
 
-a {
+#stages button, #manipulation button {
     color: #d3cce3;
-    font-size: 1.5rem;
-    margin: 0 1rem;
+    display: inline-block; 
+    font-family: inherit; 
+    margin: 0 0.5rem;
 }
 
-a[data-current=""] {
+#stages button {
+    margin: 0 1rem;
+    font-size: 1.5rem;
+}
+
+#stages button[data-current=""] {
     color: #ddd;
     font-size: 2rem;
 }
 
-.task {
+input {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 1.5rem;
+    width: 100%;
+}
+
+input::placeholder {
+    color: #888;
+    font-family: inherit;
+}
+
+input[type="date"],
+input[type="time"] {
+    width: min-content;
+}
+
+input[type="checkbox"] {
+    width: 2rem;
+}
+
+.task, #new-task {
     background: linear-gradient(#d3cce3, #e9e4f0);
     border-radius: 1rem;
     font-size: 1rem;
     padding: 1rem;
     margin: 1rem 10vw;
+}
+
+.task>div {
+    float: left;
+}
+
+.task-checkbox {
+    width: 3rem;
+}
+
+.task-info {
+    width: calc(100% - 3rem);
 }
 
 .task-item-progress {
@@ -49,13 +93,6 @@ a[data-current=""] {
 
 .task-item-name {
     font-size: 2rem;
-}
-
-button {
-    background: none;
-    border: none;
-    color: #e66465;
-    font-size: 1rem;
 }
 
 .task[data-done=""] {

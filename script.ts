@@ -19,6 +19,11 @@ function taskAncestorElement(elem: Element) {
     return null;
 }
 
+/**
+ * `Date.now()`
+ * @param datetime time
+ * @returns str rep of time difference
+ */
 function diffTimeStr(datetime: Date) {
     let diff = Date.now() - datetime.getTime();
     let suffix = 'passed';
@@ -43,11 +48,16 @@ function diffTimeStr(datetime: Date) {
             suffix].join(' ');
     }
 }
-
+/**
+ * Write `tasks` to `localStorage`.
+ */
 function writeBack() {
     window.localStorage.setItem(STROAGE_KEY, JSON.stringify(tasks));
 }
 
+/**
+ * Task Class
+ */
 class Task {
     name: string;
     due: Date;
@@ -68,6 +78,10 @@ class Task {
         this.stage = stage;
     }
 
+    /**
+     * Render new `.task` div using `this`, and set events.
+     * @param div div to render
+     */
     renderDiv(div: HTMLDivElement) {
         div.setAttribute('data-name', this.name);
         div.getElementsByClassName(
@@ -104,6 +118,11 @@ class Task {
         }
     }
 
+    /**
+     * Copy a `.task` div form template, render it using `this`, and set its
+     * events.
+     * @returns new `.task` div
+     */
     newDiv() {
         let node = task_template.content.querySelector<HTMLDivElement>(
             '.task');
@@ -112,6 +131,10 @@ class Task {
         return new_node;
     }
 
+    /**
+     * Remove `this` from `tasks` and the div from .
+     * @param ev event which target is a `.task` div
+     */
     remove(ev: Event) {
         let div = taskAncestorElement(ev.target as HTMLInputElement);
         div.remove();
@@ -119,6 +142,10 @@ class Task {
         writeBack();
     }
 
+    /**
+     * Set `this.progess`, rerender the div form page, and write back.
+     * @param ev event which target is a `.task` div
+     */
     setProgress(ev: Event) {
         let range = ev.target as HTMLInputElement;
         let val = range.value;
@@ -132,6 +159,12 @@ class Task {
         writeBack();
     }
 
+    /**
+     * Set `this.stage`, remove the div form page, and write back.
+     * IGNORE OUT OF RANGE ERROR.
+     * @param ev event which target is a `.task` div
+     * @param stage stage to change to
+     */
     setStage(ev: Event, stage: Stage) {
         let div = taskAncestorElement(ev.target as HTMLInputElement);
         div.remove();
@@ -139,12 +172,20 @@ class Task {
         writeBack();
     }
 
+    /**
+     * Equivalent to `setStage(this.stage + 1)`.
+     * @param ev event which target is a `.task` div
+     */
     advanceStage(ev: Event) {
         this.setStage(ev, this.stage + 1);
     }
 }
 
-
+/**
+ * Add task to `tasks` and write back.
+ * @param ev event
+ * @returns false
+ */
 function addTask(ev: Event) {
     let form: HTMLFormElement = ev.target as HTMLFormElement;
     let data = new FormData(form);
@@ -170,6 +211,10 @@ function addTask(ev: Event) {
     return false;
 }
 
+/**
+ * Load tasks of stage to current page.
+ * @param stage stage loading
+ */
 function loadTaskList(stage: Stage) {
     task_list.innerHTML = '';
     for (const key in tasks) {
@@ -180,6 +225,9 @@ function loadTaskList(stage: Stage) {
     }
 }
 
+/**
+ * Load tasks form `localStorage` to `tasks`.
+ */
 function load() {
     if (tasks_str !== null) {
         let raw_list = JSON.parse(window.localStorage.getItem(STROAGE_KEY));
@@ -192,6 +240,10 @@ function load() {
     }
 }
 
+/**
+ * Change current stage.
+ * @param stage stage changing to
+ */
 function changeStage(stage: Stage) {
     loadTaskList(stage);
     for (let index = 0; index <= Stage.Done; index++) {
@@ -206,23 +258,21 @@ function changeStage(stage: Stage) {
     curStage = stage;
 }
 
-function doneAllCurStage() {
-    for (const key in tasks) {
-        const task = tasks[key];
-        if (task.stage === curStage) {
-            task.stage = Stage.Done;
-        }
-    }
+/* manipulation */
 
+/**
+ * Select all tasks in page.
+ */
+function selectAll() {
+    
 }
 
-/*main*/
+/* main */
 document.getElementById('new-task').onsubmit = addTask;
 let stages_div = document.getElementById('stages');
 for (let index = 0; index <= Stage.Done; index++) {
     const stage_str = Stage[index];
-    let anchor = document.createElement('a');
-    anchor.setAttribute('herf', '#');
+    let anchor = document.createElement('button');
     anchor.id = ['stage-', stage_str.toLowerCase()].join('');
     anchor.textContent = stage_str;
     anchor.onclick = changeStage.bind(null, index);

@@ -183,8 +183,7 @@ document.getElementById('new-task').onsubmit = addTask;
 var stages_div = document.getElementById('stages');
 for (var index = 0; index <= Stage.Done; index++) {
     var stage_str = Stage[index];
-    var anchor = document.createElement('a');
-    anchor.setAttribute('herf', '#');
+    var anchor = document.createElement('button');
     anchor.id = ['stage-', stage_str.toLowerCase()].join('');
     anchor.textContent = stage_str;
     anchor.onclick = changeStage.bind(null, index);

@@ -14,13 +14,13 @@
         <h1>
             Tenparu
         </h1>
-        <div id="stages">
-        </div>
+    </div>
+    <div id="stages">
     </div>
 
-    <form class="task" id="new-task" action="">
+    <form id="new-task" action="">
         <div class="task-item-name">
-            <input type="text" name="task-name" required>
+            <input type="text" name="task-name" placeholder="Input task name here..." required>
         </div>
         <div class="task-item-due">
             <input type="date" name="due-date" required>
@@ -39,6 +39,12 @@
         </div>
         <input type="submit" value="Add task">
     </form>
+    <div id="manipulation">
+        <button>Select All</button>
+        <button>Complete Selected</button>
+        <button>Next Completed</button>
+        <button>Done Completed</button>
+    </div>
     <div id="task-list"></div>
     <template id="task-template">
         <div class="task">
