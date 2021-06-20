@@ -1,5 +1,7 @@
 :root {
+    border: 0;
     font-family: Georgia, serif;
+    margin: 0;
 }
 
 html {
@@ -16,11 +18,20 @@ button {
     font-size: 1rem;
 }
 
-#title {
-    color: #eee;
-    font-size: 3rem;
-    margin: 5vh;
+#top {
+    color: #fff;
     text-align: center;
+    margin: 2rem;
+}
+
+#title, #undone {
+    font-size: 5rem;
+    font-weight: 400;
+    text-align: center;    
+}
+
+#undone {
+    font-weight: 600;
 }
 
 #stages, #manipulation {
@@ -41,8 +52,12 @@ button {
 }
 
 #stages button[data-current=""] {
-    color: #ddd;
+    color: #fff;
     font-size: 2rem;
+}
+
+#manipulation button {
+    color: #fff;
 }
 
 input {

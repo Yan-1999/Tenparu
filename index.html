@@ -10,10 +10,16 @@
 </head>
 
 <body>
-    <div id="title">
-        <h1>
+    <div id="top">
+        <div id="title">
             Tenparu
-        </h1>
+        </div>
+        <div id="undone">
+            0
+        </div>
+        <div>
+            UNDONE
+        </div>
     </div>
     <div id="stages">
     </div>
@@ -35,22 +41,18 @@
             </select>
         </div>
         <div class="task-item-description">
-            <input type="text" name="description">
+            <input type="text" name="description" placeholder="Description(optional)">
         </div>
-        <input type="submit" value="Add task">
+        <input id="add-task" type="submit" value="Add task to InProgress">
     </form>
     <div id="manipulation">
-        <button>Select All</button>
-        <button>Complete Selected</button>
-        <button>Next Completed</button>
-        <button>Done Completed</button>
+        <button id="complete-all">Complete All</button>
+        <button id="next-completed">Move Completed to InProgress</button>
+        <button id="done-completed">Done Completed</button>
     </div>
     <div id="task-list"></div>
     <template id="task-template">
         <div class="task">
-            <div class="task-checkbox">
-                <input type="checkbox">
-            </div>
             <div class="task-info">
                 <div class="task-item-name">
                 </div>

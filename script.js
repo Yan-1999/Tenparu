@@ -2,25 +2,18 @@ var Stage;
 (function (Stage) {
     Stage[Stage["Backlog"] = 0] = "Backlog";
     Stage[Stage["Todo"] = 1] = "Todo";
-    Stage[Stage["Doing"] = 2] = "Doing";
+    Stage[Stage["InProgress"] = 2] = "InProgress";
     Stage[Stage["Verify"] = 3] = "Verify";
     Stage[Stage["Done"] = 4] = "Done";
 })(Stage || (Stage = {}));
 var STROAGE_KEY = 'tenparu';
-var task_template = document.getElementById('task-template');
-var task_list = document.getElementById('task-list');
-var curStage = Stage.Doing;
-var tasks = {};
-function taskAncestorElement(elem) {
-    var e = elem;
-    while (e !== document.body) {
-        if (e.classList.contains('task')) {
-            return (e);
-        }
-        e = e.parentElement;
-    }
-    return null;
-}
+var taskTemplate = document.getElementById('task-template').content.querySelector('.task');
+var curStage = Stage.InProgress;
+/**
+ * `Date.now()`
+ * @param datetime time
+ * @returns str rep of time difference
+ */
 function diffTimeStr(datetime) {
     var diff = Date.now() - datetime.getTime();
     var suffix = 'passed';
@@ -44,9 +37,9 @@ function diffTimeStr(datetime) {
             suffix].join(' ');
     }
 }
-function writeBack() {
-    window.localStorage.setItem(STROAGE_KEY, JSON.stringify(tasks));
-}
+/**
+ * Task Class
+ */
 var Task = /** @class */ (function () {
     function Task(name, due, priority, description, stage) {
         this.progress = 0;
@@ -56,142 +49,204 @@ var Task = /** @class */ (function () {
         this.description = description;
         this.stage = stage;
     }
-    Task.prototype.renderDiv = function (div) {
-        div.setAttribute('data-name', this.name);
-        div.getElementsByClassName('task-item-name')[0].textContent = this.name;
-        div.getElementsByClassName('task-item-due')[0].textContent = this.due.toLocaleString();
-        div.getElementsByClassName('task-item-priority')[0].textContent = this.priority;
-        div.getElementsByClassName('task-item-description')[0].textContent = this.description;
-        div.getElementsByClassName('task-item-timeleft')[0].textContent = diffTimeStr(this.due);
-        div.getElementsByClassName('task-item-delete')[0].onclick = this.remove.bind(this);
-        var next_button = div.getElementsByClassName('task-item-next')[0];
-        var range = div.getElementsByClassName('task-item-progress')[0];
-        var stage = this.stage;
-        if (stage === Stage.Done) {
-            next_button.style.display = 'none';
-            range.style.display = 'none';
-            div.setAttribute('data-done', '');
-        }
-        else {
-            next_button.textContent = Stage[stage + 1];
-            next_button.onclick = this.advanceStage.bind(this);
-            range.onchange = this.setProgress.bind(this);
-            range.value = this.progress.toString();
-            if (range.value === range.max) {
-                div.setAttribute('data-done', '');
+    /**
+     * Load Task.tasks form `localStorage` to `Task.tasks`.
+     */
+    Task.load = function () {
+        var tasksStr = window.localStorage.getItem(STROAGE_KEY);
+        if (tasksStr !== null) {
+            var raw_list = JSON.parse(tasksStr);
+            for (var key in raw_list) {
+                var raw = raw_list[key];
+                raw.due = new Date(raw.due);
+                var task = Task.tasks[key] = new Task();
+                Object.assign(task, raw);
             }
         }
     };
-    Task.prototype.newDiv = function () {
-        var node = task_template.content.querySelector('.task');
-        var new_node = document.importNode(node, true);
-        this.renderDiv(new_node);
-        return new_node;
+    /**
+     * Write `Task.tasks` to `localStorage`.
+     */
+    Task.store = function () {
+        window.localStorage.setItem(STROAGE_KEY, JSON.stringify(Task.tasks));
     };
-    Task.prototype.remove = function (ev) {
-        var div = taskAncestorElement(ev.target);
-        div.remove();
-        delete tasks[this.name];
-        writeBack();
+    Task.prototype.setProgress = function (val) {
+        this.progress = val;
+        Task.store();
     };
-    Task.prototype.setProgress = function (ev) {
-        var range = ev.target;
-        var val = range.value;
-        this.progress = Number.parseInt(val);
-        var task_div = taskAncestorElement(range);
-        if (range.value === range.max) {
-            task_div.setAttribute('data-done', '');
-        }
-        else {
-            task_div.removeAttribute('data-done');
-        }
-        writeBack();
-    };
-    Task.prototype.setStage = function (ev, stage) {
-        var div = taskAncestorElement(ev.target);
-        div.remove();
+    /**
+     * Set `this.stage`.
+     * IGNORE OUT OF RANGE ERROR.
+     * @param stage stage to change to
+     */
+    Task.prototype.setStage = function (stage) {
         this.stage = stage;
-        writeBack();
+        Task.store();
     };
-    Task.prototype.advanceStage = function (ev) {
-        this.setStage(ev, this.stage + 1);
+    Task.insert = function (task) {
+        Task.tasks[task.name] = task;
+        Task.store();
     };
+    Task.erase = function (task) {
+        delete Task.tasks[task.name];
+        Task.store();
+    };
+    Task.tasks = {};
     return Task;
 }());
-function addTask(ev) {
-    var form = ev.target;
-    var data = new FormData(form);
-    var name = data.get('task-name').toString();
-    if (name in tasks) {
-        alert("Task with the name already exits!");
-        return false;
+var TaskView = /** @class */ (function () {
+    /**
+     * USE `TaskView.create()` TO CREATE A VIEW.
+     */
+    function TaskView(div) {
+        this._div = div;
     }
-    var new_task = new Task(name, new Date([
-        data.get('due-date').toString(),
-        data.get('due-time').toString(),
-    ].join(' ')), data.get('priority').toString(), data.get('description').toString(), Stage.Doing);
-    tasks[name] = new_task;
-    writeBack();
-    var div = new_task.newDiv();
-    task_list.appendChild(div);
-    return false;
-}
-function loadTaskList(stage) {
-    task_list.innerHTML = '';
-    for (var key in tasks) {
-        var task = tasks[key];
-        if (task.stage === stage) {
-            task_list.appendChild(task.newDiv());
-        }
-    }
-}
-function load() {
-    if (tasks_str !== null) {
-        var raw_list = JSON.parse(window.localStorage.getItem(STROAGE_KEY));
-        for (var key in raw_list) {
-            var raw = raw_list[key];
-            raw.due = new Date(raw.due);
-            var task = tasks[key] = new Task();
-            Object.assign(task, raw);
-        }
-    }
-}
-function changeStage(stage) {
-    loadTaskList(stage);
-    for (var index = 0; index <= Stage.Done; index++) {
-        var elem = document.getElementById(['stage-',
-            Stage[index].toLowerCase()].join(''));
-        if (index === stage) {
-            elem.setAttribute('data-current', '');
+    /**
+     * Render new `.task` div using `this`, and set events.
+     * @param div div to render
+     */
+    TaskView.prototype._renderDiv = function (task) {
+        this._div.setAttribute('data-name', task.name);
+        this._div.getElementsByClassName('task-item-name')[0].textContent = task.name;
+        this._div.getElementsByClassName('task-item-due')[0].textContent = task.due.toLocaleString();
+        this._div.getElementsByClassName('task-item-priority')[0].textContent = task.priority;
+        this._div.getElementsByClassName('task-item-description')[0].textContent = task.description;
+        this._div.getElementsByClassName('task-item-timeleft')[0].textContent = diffTimeStr(task.due);
+        this._next_button = this._div.getElementsByClassName('task-item-next')[0];
+        this.range = this._div.getElementsByClassName('task-item-progress')[0];
+        var stage = task.stage;
+        if (stage === Stage.Done) {
+            this._next_button.style.display = 'none';
+            this.range.style.display = 'none';
+            this._div.setAttribute('data-done', '');
         }
         else {
-            elem.removeAttribute('data-current');
+            this._next_button.textContent = Stage[stage + 1];
+            this.range.value = task.progress.toString();
+            if (this.range.value === this.range.max) {
+                this._div.setAttribute('data-done', '');
+            }
         }
-    }
-    curStage = stage;
-}
-function doneAllCurStage() {
-    for (var key in tasks) {
-        var task = tasks[key];
-        if (task.stage === curStage) {
-            task.stage = Stage.Done;
+    };
+    TaskView.prototype._bindController = function (task) {
+        var controller = new TaskController(task, this);
+        this._div.getElementsByClassName('task-item-delete')[0].onclick = controller.erase.bind(controller);
+        if (task.stage !== Stage.Done) {
+            this._next_button.onclick = controller.advanceStage.bind(controller);
+            this.range.onchange = controller.editProgress.bind(controller);
         }
+    };
+    TaskView.prototype.onProgressSet = function () {
+        if (this.range.value === this.range.max) {
+            this._div.setAttribute('data-done', '');
+        }
+        else {
+            this._div.removeAttribute('data-done');
+        }
+    };
+    TaskView.prototype.erase = function () {
+        this._div.remove();
+    };
+    TaskView.createView = function (task) {
+        var div = document.importNode(taskTemplate, true);
+        var view = new TaskView(div);
+        view._renderDiv(task);
+        view._bindController(task);
+        TaskView.taskList.appendChild(view._div);
+        return view;
+    };
+    /**
+     * Load Task.tasks of stage to current page.
+     * @param stage stage loading
+     */
+    TaskView.loadView = function (stage) {
+        TaskView.taskList.innerHTML = '';
+        for (var key in Task.tasks) {
+            var task = Task.tasks[key];
+            if (task.stage === stage) {
+                TaskView.createView(task);
+            }
+        }
+    };
+    /**
+     * Change current stage.
+     * @param stage stage changing to
+     */
+    TaskView.changeViewToStage = function (stage) {
+        TaskView.loadView(stage);
+        for (var index = 0; index <= Stage.Done; index++) {
+            var elem = document.getElementById(['stage-',
+                Stage[index].toLowerCase()].join(''));
+            if (index === stage) {
+                elem.setAttribute('data-current', '');
+            }
+            else {
+                elem.removeAttribute('data-current');
+            }
+        }
+        curStage = stage;
+    };
+    TaskView.taskList = document.getElementById('task-list');
+    return TaskView;
+}());
+var TaskController = /** @class */ (function () {
+    function TaskController(task, view) {
+        this._task = task;
+        this._view = view;
     }
-}
-/*main*/
-document.getElementById('new-task').onsubmit = addTask;
+    TaskController.prototype.erase = function () {
+        this._view.erase();
+        Task.erase(this._task);
+    };
+    TaskController.prototype.editProgress = function () {
+        var val = Number.parseInt(this._view.range.value);
+        this._view.onProgressSet();
+        this._task.setProgress(val);
+    };
+    TaskController.prototype.editStage = function (stage) {
+        this._view.erase();
+        this._task.setStage(stage);
+    };
+    /**
+     * Equivalent to `editStage(this._task.stage + 1)`.
+     */
+    TaskController.prototype.advanceStage = function () {
+        this.editStage(this._task.stage + 1);
+    };
+    /**
+     * Add task to `Task.tasks` and write back.
+     * @param ev event which target is a form
+     * @returns false
+     */
+    TaskController.addTask = function (ev) {
+        var form = ev.target;
+        var data = new FormData(form);
+        var name = data.get('task-name').toString();
+        if (name in Task.tasks) {
+            alert("Task with the name already exits!");
+            return false;
+        }
+        var newTask = new Task(name, new Date([
+            data.get('due-date').toString(),
+            data.get('due-time').toString(),
+        ].join(' ')), data.get('priority').toString(), data.get('description').toString(), curStage);
+        Task.insert(newTask);
+        TaskView.createView(newTask);
+        return false;
+    };
+    return TaskController;
+}());
+/* manipulation */
+/* main */
+document.getElementById('new-task').onsubmit = TaskController.addTask;
 var stages_div = document.getElementById('stages');
 for (var index = 0; index <= Stage.Done; index++) {
     var stage_str = Stage[index];
     var anchor = document.createElement('button');
     anchor.id = ['stage-', stage_str.toLowerCase()].join('');
     anchor.textContent = stage_str;
-    anchor.onclick = changeStage.bind(null, index);
+    anchor.onclick = TaskView.changeViewToStage.bind(null, index);
     stages_div.appendChild(anchor);
 }
-var tasks_str = window.localStorage.getItem(STROAGE_KEY);
-if (tasks_str !== null) {
-    tasks = JSON.parse(window.localStorage.getItem(STROAGE_KEY));
-}
-load();
-changeStage(curStage);
+Task.load();
+TaskView.changeViewToStage(curStage);
