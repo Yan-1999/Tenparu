@@ -7,7 +7,6 @@ var Stage;
     Stage[Stage["Done"] = 4] = "Done";
 })(Stage || (Stage = {}));
 var STROAGE_KEY = 'tenparu';
-var taskTemplate = document.getElementById('task-template').content.querySelector('.task');
 var curStage = Stage.InProgress;
 /**
  * `Date.now()`
@@ -43,6 +42,7 @@ function diffTimeStr(datetime) {
 var Task = /** @class */ (function () {
     function Task(name, due, priority, description, stage) {
         this.progress = 0;
+        this.max_progress = 10;
         this.name = name;
         this.due = due;
         this.priority = priority;
@@ -91,6 +91,35 @@ var Task = /** @class */ (function () {
         delete Task.tasks[task.name];
         Task.store();
     };
+    Task.completeTasksOfStage = function (stage) {
+        for (var key in Task.tasks) {
+            var task = Task.tasks[key];
+            if (task.stage === stage) {
+                task.progress = task.max_progress;
+            }
+        }
+        Task.store();
+    };
+    Task.moveCompleteTasks = function (form, to) {
+        for (var key in Task.tasks) {
+            var task = Task.tasks[key];
+            if (task.stage === form &&
+                task.progress === task.max_progress) {
+                task.stage = to;
+            }
+        }
+        Task.store();
+    };
+    Task.eraseCompleteTasksOfStage = function (stage) {
+        for (var key in Task.tasks) {
+            var task = Task.tasks[key];
+            if (task.stage === stage &&
+                task.progress === task.max_progress) {
+                delete Task.tasks[task.name];
+            }
+        }
+        Task.store();
+    };
     Task.tasks = {};
     return Task;
 }());
@@ -123,6 +152,7 @@ var TaskView = /** @class */ (function () {
         else {
             this._next_button.textContent = Stage[stage + 1];
             this.range.value = task.progress.toString();
+            this.range.max = task.max_progress.toString();
             if (this.range.value === this.range.max) {
                 this._div.setAttribute('data-done', '');
             }
@@ -147,14 +177,16 @@ var TaskView = /** @class */ (function () {
     TaskView.prototype.erase = function () {
         this._div.remove();
     };
+    /* single view functions */
     TaskView.createView = function (task) {
-        var div = document.importNode(taskTemplate, true);
+        var div = document.importNode(TaskView.taskTemplate, true);
         var view = new TaskView(div);
         view._renderDiv(task);
         view._bindController(task);
         TaskView.taskList.appendChild(view._div);
         return view;
     };
+    /* view list functions */
     /**
      * Load Task.tasks of stage to current page.
      * @param stage stage loading
@@ -168,11 +200,36 @@ var TaskView = /** @class */ (function () {
             }
         }
     };
+    TaskView.setViewsCompleted = function () {
+        var childern = this.taskList.children;
+        for (var index = 0; index < childern.length; index++) {
+            var div = childern[index];
+            var range = div.getElementsByClassName('task-item-progress')[0];
+            range.value = range.max;
+            div.setAttribute('data-done', '');
+        }
+    };
+    TaskView.eraseViews = function () {
+        TaskView.taskList.innerHTML = '';
+    };
+    TaskView.eraseCompletedViews = function () {
+        var child = this.taskList.firstElementChild;
+        var lastChild = null;
+        while (child) {
+            lastChild = child;
+            child = lastChild.nextElementSibling;
+            var range = lastChild.getElementsByClassName('task-item-progress')[0];
+            if (range.value === range.max) {
+                lastChild.remove();
+            }
+        }
+    };
+    /* page functions */
     /**
      * Change current stage.
      * @param stage stage changing to
      */
-    TaskView.changeViewToStage = function (stage) {
+    TaskView.changeView = function (stage) {
         TaskView.loadView(stage);
         for (var index = 0; index <= Stage.Done; index++) {
             var elem = document.getElementById(['stage-',
@@ -184,9 +241,48 @@ var TaskView = /** @class */ (function () {
                 elem.removeAttribute('data-current');
             }
         }
-        curStage = stage;
+        TaskView.addTaskSubmit.value = ['Add task to', Stage[stage]].join(' ');
+        if (stage === Stage.Done) {
+            TaskView.completeAllButton.style.display = 'none';
+            TaskView.doneCompletedButton.style.display = 'none';
+            TaskView.deleteCompletedButton.style.display = 'none';
+            TaskView.nextCompletedButton.innerText = 'Remove Done Tasks';
+        }
+        else {
+            TaskView.completeAllButton.style.display = 'inline-block';
+            TaskView.doneCompletedButton.style.display = 'inline-block';
+            TaskView.deleteCompletedButton.style.display = 'inline-block';
+            TaskView.nextCompletedButton.innerText = ['Move Completed To', Stage[stage + 1]].join(' ');
+        }
     };
+    TaskView.initStageButtons = function () {
+        var stages_div = document.getElementById('stages');
+        for (var index = 0; index <= Stage.Done; index++) {
+            var stage_str = Stage[index];
+            var anchor = document.createElement('button');
+            anchor.id = ['stage-', stage_str.toLowerCase()].join('');
+            anchor.textContent = stage_str;
+            anchor.onclick = TaskController.changeToStage.bind(null, index);
+            stages_div.appendChild(anchor);
+        }
+    };
+    TaskView.bindManipulationButtons = function () {
+        TaskView.completeAllButton.onclick =
+            TaskController.completeTasksOfCurStage.bind(null);
+        TaskView.nextCompletedButton.onclick =
+            TaskController.advanceCompleted.bind(null);
+        TaskView.doneCompletedButton.onclick =
+            TaskController.doneCompleted.bind(null);
+        TaskView.deleteCompletedButton.onclick =
+            TaskController.deleteCompleted.bind(null);
+    };
+    TaskView.taskTemplate = document.getElementById('task-template').content.querySelector('.task');
     TaskView.taskList = document.getElementById('task-list');
+    TaskView.addTaskSubmit = document.getElementById('add-task');
+    TaskView.completeAllButton = document.getElementById('complete-all');
+    TaskView.nextCompletedButton = document.getElementById('next-completed');
+    TaskView.doneCompletedButton = document.getElementById('done-completed');
+    TaskView.deleteCompletedButton = document.getElementById('delete-completed');
     return TaskView;
 }());
 var TaskController = /** @class */ (function () {
@@ -234,19 +330,38 @@ var TaskController = /** @class */ (function () {
         TaskView.createView(newTask);
         return false;
     };
+    TaskController.changeToStage = function (stage) {
+        TaskView.changeView(stage);
+        curStage = stage;
+    };
+    TaskController.completeTasksOfCurStage = function () {
+        Task.completeTasksOfStage(curStage);
+        TaskView.setViewsCompleted();
+    };
+    TaskController.advanceCompleted = function () {
+        if (curStage === Stage.Done) {
+            Task.eraseCompleteTasksOfStage(curStage);
+            TaskView.eraseViews();
+        }
+        else {
+            Task.moveCompleteTasks(curStage, curStage + 1);
+            TaskView.eraseCompletedViews();
+        }
+    };
+    TaskController.doneCompleted = function () {
+        Task.moveCompleteTasks(curStage, Stage.Done);
+        TaskView.eraseCompletedViews();
+    };
+    TaskController.deleteCompleted = function () {
+        Task.eraseCompleteTasksOfStage(curStage);
+        TaskView.eraseCompletedViews();
+    };
     return TaskController;
 }());
 /* manipulation */
 /* main */
 document.getElementById('new-task').onsubmit = TaskController.addTask;
-var stages_div = document.getElementById('stages');
-for (var index = 0; index <= Stage.Done; index++) {
-    var stage_str = Stage[index];
-    var anchor = document.createElement('button');
-    anchor.id = ['stage-', stage_str.toLowerCase()].join('');
-    anchor.textContent = stage_str;
-    anchor.onclick = TaskView.changeViewToStage.bind(null, index);
-    stages_div.appendChild(anchor);
-}
+TaskView.initStageButtons();
+TaskView.bindManipulationButtons();
 Task.load();
-TaskView.changeViewToStage(curStage);
+TaskView.changeView(curStage);

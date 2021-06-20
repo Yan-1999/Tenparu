@@ -1,10 +1,6 @@
 enum Stage { Backlog, Todo, InProgress, Verify, Done }
 
 const STROAGE_KEY = 'tenparu';
-
-var taskTemplate = (document.getElementById('task-template') as
-    HTMLTemplateElement).content.querySelector<HTMLDivElement>(
-        '.task');
 var curStage = Stage.InProgress;
 
 /**
@@ -49,6 +45,7 @@ class Task {
     description: string;
     stage: Stage;
     progress: number = 0;
+    max_progress: number = 10;
 
     constructor(name?: string,
         due?: Date,
@@ -108,14 +105,55 @@ class Task {
         delete Task.tasks[task.name];
         Task.store();
     }
+
+    static completeTasksOfStage(stage: Stage) {
+        for (const key in Task.tasks) {
+            const task = Task.tasks[key];
+            if (task.stage === stage) {
+                task.progress = task.max_progress;
+            }
+        }
+        Task.store();
+    }
+
+    static moveCompleteTasks(form: Stage, to: Stage) {
+        for (const key in Task.tasks) {
+            const task = Task.tasks[key];
+            if (task.stage === form &&
+                task.progress === task.max_progress) {
+                task.stage = to;
+            }
+        }
+        Task.store();
+    }
+
+    static eraseCompleteTasksOfStage(stage: Stage) {
+        for (const key in Task.tasks) {
+            const task = Task.tasks[key];
+            if (task.stage === stage &&
+                task.progress === task.max_progress) {
+                delete Task.tasks[task.name];
+            }
+        }
+        Task.store();
+    }
 }
 
 class TaskView {
+    static taskTemplate = (document.getElementById('task-template') as
+        HTMLTemplateElement).content.querySelector<HTMLDivElement>(
+            '.task');
     static taskList = document.getElementById('task-list') as HTMLDivElement;
+    static addTaskSubmit = document.getElementById('add-task') as HTMLInputElement;
+    static completeAllButton = document.getElementById('complete-all');
+    static nextCompletedButton = document.getElementById('next-completed');
+    static doneCompletedButton = document.getElementById('done-completed');
+    static deleteCompletedButton = document.getElementById('delete-completed');
 
-    _div:HTMLDivElement;
-    range: HTMLInputElement;
+    _div: HTMLDivElement;
     _next_button: HTMLButtonElement;
+
+    range: HTMLInputElement;
 
     /**
      * USE `TaskView.create()` TO CREATE A VIEW.
@@ -152,6 +190,7 @@ class TaskView {
         } else {
             this._next_button.textContent = Stage[stage + 1];
             this.range.value = task.progress.toString();
+            this.range.max = task.max_progress.toString();
             if (this.range.value === this.range.max) {
                 this._div.setAttribute('data-done', '');
             }
@@ -181,14 +220,18 @@ class TaskView {
         this._div.remove();
     }
 
+    /* single view functions */
+
     static createView(task: Task) {
-        let div = document.importNode(taskTemplate, true);
+        let div = document.importNode(TaskView.taskTemplate, true);
         let view = new TaskView(div);
         view._renderDiv(task);
         view._bindController(task);
         TaskView.taskList.appendChild(view._div);
         return view;
     }
+
+    /* view list functions */
 
     /**
      * Load Task.tasks of stage to current page.
@@ -204,11 +247,42 @@ class TaskView {
         }
     }
 
+    static setViewsCompleted() {
+        let childern = this.taskList.children;
+        for (let index = 0; index < childern.length; index++) {
+            const div = childern[index] as HTMLDivElement;
+            let range = div.getElementsByClassName('task-item-progress')[0] as
+                HTMLInputElement;
+            range.value = range.max;
+            div.setAttribute('data-done', '');
+        }
+    }
+
+    static eraseViews() {
+        TaskView.taskList.innerHTML = '';
+    }
+
+    static eraseCompletedViews() {
+        let child = this.taskList.firstElementChild;
+        let lastChild = null;
+        while (child) {
+            lastChild = child;
+            child = lastChild.nextElementSibling;
+            let range = lastChild.getElementsByClassName('task-item-progress')[0] as
+                HTMLInputElement;
+            if (range.value === range.max) {
+                lastChild.remove();
+            }
+        }
+    }
+
+    /* page functions */
+
     /**
      * Change current stage.
      * @param stage stage changing to
      */
-    static changeViewToStage(stage: Stage) {
+    static changeView(stage: Stage) {
         TaskView.loadView(stage);
         for (let index = 0; index <= Stage.Done; index++) {
             let elem = document.getElementById(['stage-',
@@ -219,7 +293,41 @@ class TaskView {
                 elem.removeAttribute('data-current');
             }
         }
-        curStage = stage;
+        TaskView.addTaskSubmit.value = ['Add task to', Stage[stage]].join(' ');
+        if (stage === Stage.Done) {
+            TaskView.completeAllButton.style.display = 'none';
+            TaskView.doneCompletedButton.style.display = 'none';
+            TaskView.deleteCompletedButton.style.display = 'none';
+            TaskView.nextCompletedButton.innerText = 'Remove Done Tasks';
+        } else {
+            TaskView.completeAllButton.style.display = 'inline-block';
+            TaskView.doneCompletedButton.style.display = 'inline-block';
+            TaskView.deleteCompletedButton.style.display = 'inline-block';
+            TaskView.nextCompletedButton.innerText = ['Move Completed To', Stage[stage + 1]].join(' ');
+        }
+    }
+
+    static initStageButtons() {
+        let stages_div = document.getElementById('stages');
+        for (let index = 0; index <= Stage.Done; index++) {
+            const stage_str = Stage[index];
+            let anchor = document.createElement('button');
+            anchor.id = ['stage-', stage_str.toLowerCase()].join('');
+            anchor.textContent = stage_str;
+            anchor.onclick = TaskController.changeToStage.bind(null, index);
+            stages_div.appendChild(anchor);
+        }
+    }
+
+    static bindManipulationButtons() {
+        TaskView.completeAllButton.onclick =
+            TaskController.completeTasksOfCurStage.bind(null);
+        TaskView.nextCompletedButton.onclick =
+            TaskController.advanceCompleted.bind(null);
+        TaskView.doneCompletedButton.onclick =
+            TaskController.doneCompleted.bind(null);
+        TaskView.deleteCompletedButton.onclick =
+            TaskController.deleteCompleted.bind(null);
     }
 }
 
@@ -283,20 +391,43 @@ class TaskController {
         TaskView.createView(newTask);
         return false;
     }
+
+    static changeToStage(stage: Stage) {
+        TaskView.changeView(stage);
+        curStage = stage;
+    }
+
+    static completeTasksOfCurStage() {
+        Task.completeTasksOfStage(curStage);
+        TaskView.setViewsCompleted();
+    }
+
+    static advanceCompleted() {
+        if (curStage === Stage.Done) {
+            Task.eraseCompleteTasksOfStage(curStage);
+            TaskView.eraseViews()
+        } else {
+            Task.moveCompleteTasks(curStage, curStage + 1);
+            TaskView.eraseCompletedViews();
+        }
+    }
+
+    static doneCompleted() {
+        Task.moveCompleteTasks(curStage, Stage.Done);
+        TaskView.eraseCompletedViews();
+    }
+
+    static deleteCompleted() {
+        Task.eraseCompleteTasksOfStage(curStage);
+        TaskView.eraseCompletedViews();
+    }
 }
 
 /* manipulation */
 
 /* main */
 document.getElementById('new-task').onsubmit = TaskController.addTask;
-let stages_div = document.getElementById('stages');
-for (let index = 0; index <= Stage.Done; index++) {
-    const stage_str = Stage[index];
-    let anchor = document.createElement('button');
-    anchor.id = ['stage-', stage_str.toLowerCase()].join('');
-    anchor.textContent = stage_str;
-    anchor.onclick = TaskView.changeViewToStage.bind(null, index);
-    stages_div.appendChild(anchor);
-}
+TaskView.initStageButtons()
+TaskView.bindManipulationButtons()
 Task.load();
-TaskView.changeViewToStage(curStage);
+TaskView.changeView(curStage);
