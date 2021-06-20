@@ -171,6 +171,7 @@ class Task {
                 delete Task.tasks[task.name];
             }
         }
+        Task.numTaskInStage[Stage.Done] = 0;
         Task.store();
     }
 }
@@ -377,7 +378,7 @@ class TaskView {
             TaskController.deleteCompleted.bind(null);
     }
 
-    static updateUndoneCnt() {
+    static updateCnt() {
         let undoneCount = 0;
         for (let index = 0; index <= Stage.Done; index++) {
             const cnt = Task.numTaskInStage[index];
@@ -410,7 +411,7 @@ class TaskController {
     erase() {
         this.#view.erase();
         Task.erase(this.#task);
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 
     editProgress() {
@@ -422,7 +423,7 @@ class TaskController {
     editStage(stage: Stage) {
         this.#view.erase();
         this.#task.setStage(stage);
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 
     /**
@@ -457,7 +458,7 @@ class TaskController {
         );
         Task.insert(newTask);
         TaskView.createView(newTask);
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
         return false;
     }
 
@@ -479,19 +480,19 @@ class TaskController {
             Task.moveCompleteTasks(curStage, curStage + 1);
             TaskView.eraseCompletedViews();
         }
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 
     static doneCompleted() {
         Task.moveCompleteTasks(curStage, Stage.Done);
         TaskView.eraseCompletedViews();
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 
     static deleteCompleted() {
         Task.eraseCompleteTasksOfStage(curStage);
         TaskView.eraseCompletedViews();
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 }
 
@@ -503,4 +504,4 @@ TaskView.initStageButtons()
 TaskView.bindManipulationButtons()
 Task.load();
 TaskView.changeView(curStage);
-TaskView.updateUndoneCnt();
+TaskView.updateCnt();

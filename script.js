@@ -162,6 +162,7 @@ class Task {
                 delete Task.tasks[task.name];
             }
         }
+        Task.numTaskInStage[Stage.Done] = 0;
         Task.store();
     }
 }
@@ -291,7 +292,7 @@ class TaskView {
         TaskView.deleteCompletedButton.onclick =
             TaskController.deleteCompleted.bind(null);
     }
-    static updateUndoneCnt() {
+    static updateCnt() {
         let undoneCount = 0;
         for (let index = 0; index <= Stage.Done; index++) {
             const cnt = Task.numTaskInStage[index];
@@ -365,7 +366,7 @@ class TaskController {
     erase() {
         __classPrivateFieldGet(this, _TaskController_view, "f").erase();
         Task.erase(__classPrivateFieldGet(this, _TaskController_task, "f"));
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
     editProgress() {
         let val = Number.parseInt(__classPrivateFieldGet(this, _TaskController_view, "f").range.value);
@@ -375,7 +376,7 @@ class TaskController {
     editStage(stage) {
         __classPrivateFieldGet(this, _TaskController_view, "f").erase();
         __classPrivateFieldGet(this, _TaskController_task, "f").setStage(stage);
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
     /**
      * Equivalent to `editStage(this.#task.stage + 1)`.
@@ -402,7 +403,7 @@ class TaskController {
         ].join(' ')), data.get('priority').toString(), data.get('description').toString(), curStage);
         Task.insert(newTask);
         TaskView.createView(newTask);
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
         return false;
     }
     static changeToStage(stage) {
@@ -422,17 +423,17 @@ class TaskController {
             Task.moveCompleteTasks(curStage, curStage + 1);
             TaskView.eraseCompletedViews();
         }
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
     static doneCompleted() {
         Task.moveCompleteTasks(curStage, Stage.Done);
         TaskView.eraseCompletedViews();
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
     static deleteCompleted() {
         Task.eraseCompleteTasksOfStage(curStage);
         TaskView.eraseCompletedViews();
-        TaskView.updateUndoneCnt();
+        TaskView.updateCnt();
     }
 }
 _TaskController_task = new WeakMap(), _TaskController_view = new WeakMap();
@@ -443,4 +444,4 @@ TaskView.initStageButtons();
 TaskView.bindManipulationButtons();
 Task.load();
 TaskView.changeView(curStage);
-TaskView.updateUndoneCnt();
+TaskView.updateCnt();
