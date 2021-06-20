@@ -57,6 +57,12 @@ button {
     font-size: 2rem;
 }
 
+#stages span {
+    font-size: 1.2rem;
+    margin: 0 0.3rem;
+    vertical-align: super;
+}
+
 #manipulation div {
     margin: 1rem 0;
     font-size: 1.2rem;

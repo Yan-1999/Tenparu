@@ -38,7 +38,7 @@ function diffTimeStr(datetime: Date) {
  */
 class Task {
     static tasks: { [key: string]: Task } = {};
-    static numTaskInStage = new Array(Stage.Done + 1);
+    static numTaskInStage: number[] = new Array(Stage.Done + 1);
 
     name: string;
     due: Date;
@@ -355,11 +355,14 @@ class TaskView {
         let stages_div = document.getElementById('stages');
         for (let index = 0; index <= Stage.Done; index++) {
             const stage_str = Stage[index];
-            let anchor = document.createElement('button');
-            anchor.id = ['stage-', stage_str.toLowerCase()].join('');
-            anchor.textContent = stage_str;
-            anchor.onclick = TaskController.changeToStage.bind(null, index);
-            stages_div.appendChild(anchor);
+            let button = document.createElement('button');
+            button.id = ['stage-', stage_str.toLowerCase()].join('');
+            button.textContent = stage_str;
+            button.onclick = TaskController.changeToStage.bind(null, index);
+            let cntSpan = document.createElement('span');
+            cntSpan.innerText = '0';
+            button.appendChild(cntSpan);
+            stages_div.appendChild(button);
         }
     }
 
@@ -375,7 +378,22 @@ class TaskView {
     }
 
     static updateUndoneCnt() {
-        TaskView.undoneCntDiv.innerText = Task.undoneCount.toString();
+        let undoneCount = 0;
+        for (let index = 0; index <= Stage.Done; index++) {
+            const cnt = Task.numTaskInStage[index];
+            let span = document.getElementById(['stage-',
+                Stage[index].toLowerCase()].join(''))
+                .getElementsByTagName('span')[0];
+            if (cnt === 0) {
+                span.style.display = 'none';
+            } else {
+                span.style.display = 'inherit';
+                span.innerText = cnt.toString();
+            }
+            undoneCount += cnt;
+        }
+        undoneCount -= Task.numTaskInStage[Stage.Done];
+        this.undoneCntDiv.innerText = undoneCount.toString();
     }
 }
 
