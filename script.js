@@ -52,12 +52,11 @@ function diffTimeStr(datetime) {
  * Task Class
  */
 class Task {
-    constructor(name, due, priority, description, stage) {
+    constructor(name, due, description, stage) {
         this.progress = 0;
         this.max_progress = 10;
         this.name = name;
         this.due = due;
-        this.priority = priority;
         this.description = description;
         this.stage = stage;
     }
@@ -316,7 +315,6 @@ _TaskView_div = new WeakMap(), _TaskView_next_button = new WeakMap(), _TaskView_
     __classPrivateFieldGet(this, _TaskView_div, "f").setAttribute('data-name', task.name);
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-name')[0].textContent = task.name;
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-due')[0].textContent = task.due.toLocaleString();
-    __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-priority')[0].textContent = task.priority;
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-description')[0].textContent = task.description;
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-timeleft')[0].textContent = diffTimeStr(task.due);
     __classPrivateFieldSet(this, _TaskView_next_button, __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-next')[0], "f");
@@ -400,7 +398,7 @@ class TaskController {
         let newTask = new Task(name, new Date([
             data.get('due-date').toString(),
             data.get('due-time').toString(),
-        ].join(' ')), data.get('priority').toString(), data.get('description').toString(), curStage);
+        ].join(' ')), data.get('description').toString(), curStage);
         Task.insert(newTask);
         TaskView.createView(newTask);
         TaskView.updateCnt();

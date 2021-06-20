@@ -42,7 +42,6 @@ class Task {
 
     name: string;
     due: Date;
-    priority: string;
     description: string;
     stage: Stage;
     progress: number = 0;
@@ -50,12 +49,10 @@ class Task {
 
     constructor(name?: string,
         due?: Date,
-        priority?: string,
         description?: string,
         stage?: Stage) {
         this.name = name;
         this.due = due;
-        this.priority = priority;
         this.description = description;
         this.stage = stage;
     }
@@ -211,8 +208,6 @@ class TaskView {
             'task-item-name')[0].textContent = task.name;
         this.#div.getElementsByClassName(
             'task-item-due')[0].textContent = task.due.toLocaleString();
-        this.#div.getElementsByClassName(
-            'task-item-priority')[0].textContent = task.priority;
         this.#div.getElementsByClassName(
             'task-item-description')[0].textContent = task.description;
         this.#div.getElementsByClassName(
@@ -452,7 +447,6 @@ class TaskController {
                 data.get('due-date').toString(),
                 data.get('due-time').toString(),
             ].join(' ')),
-            data.get('priority').toString(),
             data.get('description').toString(),
             curStage
         );
