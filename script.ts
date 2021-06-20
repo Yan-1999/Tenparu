@@ -93,6 +93,7 @@ class Task {
      */
     setStage(stage: Stage) {
         this.stage = stage;
+        this.progress = 0;
         Task.store();
     }
 
@@ -152,6 +153,7 @@ class TaskView {
 
     _div: HTMLDivElement;
     _next_button: HTMLButtonElement;
+    _done_button: HTMLButtonElement;
 
     range: HTMLInputElement;
 
@@ -180,9 +182,14 @@ class TaskView {
             'task-item-timeleft')[0].textContent = diffTimeStr(task.due);
         this._next_button = this._div.getElementsByClassName('task-item-next')[0] as
             HTMLButtonElement;
+        this._done_button = this._div.getElementsByClassName('task-item-done')[0] as
+            HTMLButtonElement;
         this.range = this._div.getElementsByClassName('task-item-progress')[0] as
             HTMLInputElement
         let stage = task.stage;
+        if (stage >= Stage.Verify) {
+            this._done_button.style.display = 'none';
+        }
         if (stage === Stage.Done) {
             this._next_button.style.display = 'none';
             this.range.style.display = 'none';
@@ -202,6 +209,7 @@ class TaskView {
 
         (this._div.getElementsByClassName('task-item-delete')[0] as
             HTMLButtonElement).onclick = controller.erase.bind(controller);
+        this._done_button.onclick = controller.editStage.bind(controller, Stage.Done);
         if (task.stage !== Stage.Done) {
             this._next_button.onclick = controller.advanceStage.bind(controller);
             this.range.onchange = controller.editProgress.bind(controller);

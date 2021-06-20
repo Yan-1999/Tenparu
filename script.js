@@ -81,6 +81,7 @@ var Task = /** @class */ (function () {
      */
     Task.prototype.setStage = function (stage) {
         this.stage = stage;
+        this.progress = 0;
         Task.store();
     };
     Task.insert = function (task) {
@@ -142,8 +143,12 @@ var TaskView = /** @class */ (function () {
         this._div.getElementsByClassName('task-item-description')[0].textContent = task.description;
         this._div.getElementsByClassName('task-item-timeleft')[0].textContent = diffTimeStr(task.due);
         this._next_button = this._div.getElementsByClassName('task-item-next')[0];
+        this._done_button = this._div.getElementsByClassName('task-item-done')[0];
         this.range = this._div.getElementsByClassName('task-item-progress')[0];
         var stage = task.stage;
+        if (stage >= Stage.Verify) {
+            this._done_button.style.display = 'none';
+        }
         if (stage === Stage.Done) {
             this._next_button.style.display = 'none';
             this.range.style.display = 'none';
@@ -161,6 +166,7 @@ var TaskView = /** @class */ (function () {
     TaskView.prototype._bindController = function (task) {
         var controller = new TaskController(task, this);
         this._div.getElementsByClassName('task-item-delete')[0].onclick = controller.erase.bind(controller);
+        this._done_button.onclick = controller.editStage.bind(controller, Stage.Done);
         if (task.stage !== Stage.Done) {
             this._next_button.onclick = controller.advanceStage.bind(controller);
             this.range.onchange = controller.editProgress.bind(controller);
