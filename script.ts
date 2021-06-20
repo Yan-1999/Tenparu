@@ -38,6 +38,7 @@ function diffTimeStr(datetime: Date) {
  */
 class Task {
     static tasks: { [key: string]: Task } = {};
+    static numTaskInStage = new Array(Stage.Done + 1);
 
     name: string;
     due: Date;
@@ -58,10 +59,21 @@ class Task {
         this.description = description;
         this.stage = stage;
     }
+
+    static get undoneCount() {
+        let undoneCnt = 0;
+        for (let stage = 0; stage < Stage.Done; stage++) {
+            const cnt = Task.numTaskInStage[stage];
+            undoneCnt += cnt;
+        }
+        return undoneCnt;
+    }
+
     /**
      * Load Task.tasks form `localStorage` to `Task.tasks`.
      */
     static load() {
+        Task.numTaskInStage.fill(0, Stage.Backlog, Stage.Done + 1);
         let tasksStr = window.localStorage.getItem(STROAGE_KEY);
         if (tasksStr !== null) {
             let raw_list = JSON.parse(tasksStr);
@@ -70,6 +82,7 @@ class Task {
                 raw.due = new Date(raw.due);
                 let task = Task.tasks[key] = new Task();
                 Object.assign(task, raw);
+                Task.numTaskInStage[task.stage]++;
             }
         }
     }
@@ -92,6 +105,8 @@ class Task {
      * @param stage stage to change to
      */
     setStage(stage: Stage) {
+        Task.numTaskInStage[this.stage]--;
+        Task.numTaskInStage[stage]++;
         this.stage = stage;
         this.progress = 0;
         Task.store();
@@ -99,10 +114,12 @@ class Task {
 
     static insert(task: Task) {
         Task.tasks[task.name] = task;
+        Task.numTaskInStage[task.stage]++;
         Task.store();
     }
 
     static erase(task: Task) {
+        Task.numTaskInStage[task.stage]--;
         delete Task.tasks[task.name];
         Task.store();
     }
@@ -118,21 +135,39 @@ class Task {
     }
 
     static moveCompleteTasks(form: Stage, to: Stage) {
+        let cnt = 0;
         for (const key in Task.tasks) {
             const task = Task.tasks[key];
             if (task.stage === form &&
                 task.progress === task.max_progress) {
                 task.stage = to;
+                task.progress = 0;
+                cnt++;
             }
         }
+        Task.numTaskInStage[form] -= cnt;
+        Task.numTaskInStage[to] += cnt;
         Task.store();
     }
 
     static eraseCompleteTasksOfStage(stage: Stage) {
+        let cnt = 0;
         for (const key in Task.tasks) {
             const task = Task.tasks[key];
             if (task.stage === stage &&
                 task.progress === task.max_progress) {
+                delete Task.tasks[task.name];
+                cnt++;
+            }
+        }
+        Task.numTaskInStage[stage] -= cnt;
+        Task.store();
+    }
+
+    static eraseDone() {
+        for (const key in Task.tasks) {
+            const task = Task.tasks[key];
+            if (task.stage === Stage.Done) {
                 delete Task.tasks[task.name];
             }
         }
@@ -150,10 +185,11 @@ class TaskView {
     static nextCompletedButton = document.getElementById('next-completed');
     static doneCompletedButton = document.getElementById('done-completed');
     static deleteCompletedButton = document.getElementById('delete-completed');
+    static undoneCntDiv = document.getElementById('undone') as HTMLDivElement;
 
-    _div: HTMLDivElement;
-    _next_button: HTMLButtonElement;
-    _done_button: HTMLButtonElement;
+    #div: HTMLDivElement;
+    #next_button: HTMLButtonElement;
+    #done_button: HTMLButtonElement;
 
     range: HTMLInputElement;
 
@@ -161,71 +197,71 @@ class TaskView {
      * USE `TaskView.create()` TO CREATE A VIEW.
      */
     constructor(div: HTMLDivElement) {
-        this._div = div;
+        this.#div = div;
     }
 
     /**
      * Render new `.task` div using `this`, and set events.
      * @param div div to render
      */
-    _renderDiv(task: Task) {
-        this._div.setAttribute('data-name', task.name);
-        this._div.getElementsByClassName(
+    #renderDiv(task: Task) {
+        this.#div.setAttribute('data-name', task.name);
+        this.#div.getElementsByClassName(
             'task-item-name')[0].textContent = task.name;
-        this._div.getElementsByClassName(
+        this.#div.getElementsByClassName(
             'task-item-due')[0].textContent = task.due.toLocaleString();
-        this._div.getElementsByClassName(
+        this.#div.getElementsByClassName(
             'task-item-priority')[0].textContent = task.priority;
-        this._div.getElementsByClassName(
+        this.#div.getElementsByClassName(
             'task-item-description')[0].textContent = task.description;
-        this._div.getElementsByClassName(
+        this.#div.getElementsByClassName(
             'task-item-timeleft')[0].textContent = diffTimeStr(task.due);
-        this._next_button = this._div.getElementsByClassName('task-item-next')[0] as
+        this.#next_button = this.#div.getElementsByClassName('task-item-next')[0] as
             HTMLButtonElement;
-        this._done_button = this._div.getElementsByClassName('task-item-done')[0] as
+        this.#done_button = this.#div.getElementsByClassName('task-item-done')[0] as
             HTMLButtonElement;
-        this.range = this._div.getElementsByClassName('task-item-progress')[0] as
+        this.range = this.#div.getElementsByClassName('task-item-progress')[0] as
             HTMLInputElement
         let stage = task.stage;
         if (stage >= Stage.Verify) {
-            this._done_button.style.display = 'none';
+            this.#done_button.style.display = 'none';
         }
         if (stage === Stage.Done) {
-            this._next_button.style.display = 'none';
+            this.#next_button.style.display = 'none';
             this.range.style.display = 'none';
-            this._div.setAttribute('data-done', '');
+            this.#div.setAttribute('data-done', '');
         } else {
-            this._next_button.textContent = Stage[stage + 1];
+            this.#next_button.textContent = Stage[stage + 1];
             this.range.value = task.progress.toString();
             this.range.max = task.max_progress.toString();
             if (this.range.value === this.range.max) {
-                this._div.setAttribute('data-done', '');
+                this.#div.setAttribute('data-done', '');
             }
         }
     }
 
-    _bindController(task: Task) {
+    #bindController(task: Task) {
         let controller = new TaskController(task, this);
 
-        (this._div.getElementsByClassName('task-item-delete')[0] as
+        (this.#div.getElementsByClassName('task-item-delete')[0] as
             HTMLButtonElement).onclick = controller.erase.bind(controller);
-        this._done_button.onclick = controller.editStage.bind(controller, Stage.Done);
+        this.#done_button.onclick = controller.editStage.bind(controller, Stage.Done);
         if (task.stage !== Stage.Done) {
-            this._next_button.onclick = controller.advanceStage.bind(controller);
+            this.#next_button.onclick = controller.advanceStage.bind(controller);
             this.range.onchange = controller.editProgress.bind(controller);
         }
     }
 
     onProgressSet() {
         if (this.range.value === this.range.max) {
-            this._div.setAttribute('data-done', '');
+            this.#div.setAttribute('data-done', '');
         } else {
-            this._div.removeAttribute('data-done');
+            this.#div.removeAttribute('data-done');
         }
     }
 
     erase() {
-        this._div.remove();
+        this.#div.remove();
     }
 
     /* single view functions */
@@ -233,9 +269,9 @@ class TaskView {
     static createView(task: Task) {
         let div = document.importNode(TaskView.taskTemplate, true);
         let view = new TaskView(div);
-        view._renderDiv(task);
-        view._bindController(task);
-        TaskView.taskList.appendChild(view._div);
+        view.#renderDiv(task);
+        view.#bindController(task);
+        TaskView.taskList.appendChild(view.#div);
         return view;
     }
 
@@ -337,39 +373,45 @@ class TaskView {
         TaskView.deleteCompletedButton.onclick =
             TaskController.deleteCompleted.bind(null);
     }
+
+    static updateUndoneCnt() {
+        TaskView.undoneCntDiv.innerText = Task.undoneCount.toString();
+    }
 }
 
 class TaskController {
 
-    _task: Task;
-    _view: TaskView;
+    #task: Task;
+    #view: TaskView;
 
     constructor(task: Task, view: TaskView) {
-        this._task = task;
-        this._view = view;
+        this.#task = task;
+        this.#view = view;
     }
 
     erase() {
-        this._view.erase();
-        Task.erase(this._task);
+        this.#view.erase();
+        Task.erase(this.#task);
+        TaskView.updateUndoneCnt();
     }
 
     editProgress() {
-        let val = Number.parseInt(this._view.range.value);
-        this._view.onProgressSet();
-        this._task.setProgress(val);
+        let val = Number.parseInt(this.#view.range.value);
+        this.#view.onProgressSet();
+        this.#task.setProgress(val);
     }
 
     editStage(stage: Stage) {
-        this._view.erase();
-        this._task.setStage(stage);
+        this.#view.erase();
+        this.#task.setStage(stage);
+        TaskView.updateUndoneCnt();
     }
 
     /**
-     * Equivalent to `editStage(this._task.stage + 1)`.
+     * Equivalent to `editStage(this.#task.stage + 1)`.
      */
     advanceStage() {
-        this.editStage(this._task.stage + 1);
+        this.editStage(this.#task.stage + 1);
     }
 
     /**
@@ -397,6 +439,7 @@ class TaskController {
         );
         Task.insert(newTask);
         TaskView.createView(newTask);
+        TaskView.updateUndoneCnt();
         return false;
     }
 
@@ -412,22 +455,25 @@ class TaskController {
 
     static advanceCompleted() {
         if (curStage === Stage.Done) {
-            Task.eraseCompleteTasksOfStage(curStage);
+            Task.eraseDone();
             TaskView.eraseViews()
         } else {
             Task.moveCompleteTasks(curStage, curStage + 1);
             TaskView.eraseCompletedViews();
         }
+        TaskView.updateUndoneCnt();
     }
 
     static doneCompleted() {
         Task.moveCompleteTasks(curStage, Stage.Done);
         TaskView.eraseCompletedViews();
+        TaskView.updateUndoneCnt();
     }
 
     static deleteCompleted() {
         Task.eraseCompleteTasksOfStage(curStage);
         TaskView.eraseCompletedViews();
+        TaskView.updateUndoneCnt();
     }
 }
 
@@ -439,3 +485,4 @@ TaskView.initStageButtons()
 TaskView.bindManipulationButtons()
 Task.load();
 TaskView.changeView(curStage);
+TaskView.updateUndoneCnt();
