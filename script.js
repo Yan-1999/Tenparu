@@ -499,6 +499,7 @@ class TaskController {
     static changeToStage(stage) {
         TaskView.changePageToStage(stage);
         curStage = stage;
+        window.localStorage.setItem('curStage', curStage.toString());
     }
     static completeTasksOfCurStage() {
         Task.completeTasksOfStage(curStage);
@@ -533,5 +534,9 @@ document.getElementById('new-task').onsubmit = TaskController.addTask;
 TaskView.initStageButtons();
 TaskView.bindListManipulationButtons();
 Task.load();
+let stageStr = window.localStorage.getItem('curStage');
+if (stageStr !== null) {
+    curStage = Number.parseInt(stageStr);
+}
 TaskView.changePageToStage(curStage);
 TaskView.updateCnt();
