@@ -46,10 +46,16 @@
         <input id="add-task" type="submit" value="Add task to InProgress">
     </form>
     <div id="manipulation">
-        <button id="complete-all">Complete All</button>
-        <button id="next-completed">Move Completed To InProgress</button>
-        <button id="done-completed">Done Completed</button>
-        <button id="delete-completed">Delete Completed</button>
+        <div>
+            <button id="complete-all">Complete All</button>
+        </div>
+        <div>
+            --- Completed Tasks ---
+            <br>
+            <button id="next-completed">To Verify</button>
+            <button id="done-completed">To Done</button>
+            <button id="delete-completed">Delete</button>
+        </div>
     </div>
     <div id="task-list"></div>
     <template id="task-template">

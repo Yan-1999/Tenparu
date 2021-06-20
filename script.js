@@ -264,7 +264,7 @@ class TaskView {
             TaskView.completeAllButton.style.display = 'inline-block';
             TaskView.doneCompletedButton.style.display = 'inline-block';
             TaskView.deleteCompletedButton.style.display = 'inline-block';
-            TaskView.nextCompletedButton.innerText = ['Move Completed To', Stage[stage + 1]].join(' ');
+            TaskView.nextCompletedButton.innerText = ['To', Stage[stage + 1]].join(' ');
         }
     }
     static initStageButtons() {
