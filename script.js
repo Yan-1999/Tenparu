@@ -49,7 +49,7 @@ function diffTimeStr(datetime) {
     }
 }
 /**
- * Task Class
+ * Model
  */
 class Task {
     constructor(name, due, description, stage) {
@@ -60,6 +60,9 @@ class Task {
         this.description = description;
         this.stage = stage;
     }
+    /**
+     * Not used currently.
+     */
     static get undoneCount() {
         let undoneCnt = 0;
         for (let stage = 0; stage < Stage.Done; stage++) {
@@ -69,7 +72,7 @@ class Task {
         return undoneCnt;
     }
     /**
-     * Load Task.tasks form `localStorage` to `Task.tasks`.
+     * Load form `localStorage` to `Task.tasks`.
      */
     static load() {
         Task.numTaskInStage.fill(0, Stage.Backlog, Stage.Done + 1);
@@ -91,32 +94,56 @@ class Task {
     static store() {
         window.localStorage.setItem(STROAGE_KEY, JSON.stringify(Task.tasks));
     }
+    /* manipulation of `this` */
+    /**
+     * Set task progress
+     * @param val progress
+     */
     setProgress(val) {
         this.progress = val;
         Task.store();
     }
     /**
-     * Set `this.stage`.
+     * Set task stage
+     * Progress will be set to 0.
      * IGNORE OUT OF RANGE ERROR.
-     * @param stage stage to change to
+     * @param stage new stage to the task
      */
     setStage(stage) {
+        // keep numTaskInStage on track with chages to task stage
         Task.numTaskInStage[this.stage]--;
         Task.numTaskInStage[stage]++;
         this.stage = stage;
         this.progress = 0;
         Task.store();
     }
+    /* manipulation of `tasks` */
+    /**
+     * Insert a task to task list
+     * @param task task to insert
+     */
     static insert(task) {
         Task.tasks[task.name] = task;
+        // keep numTaskInStage on track with chages to task stage
         Task.numTaskInStage[task.stage]++;
         Task.store();
     }
+    /**
+     * Delete a task form task list
+     * @param task task to delete
+     */
     static erase(task) {
+        // keep numTaskInStage on track with chages to task stage
         Task.numTaskInStage[task.stage]--;
         delete Task.tasks[task.name];
         Task.store();
     }
+    /* manipulation of all tasks in a stage */
+    /**
+     * Set all tasks in stage `stage` to 100% progress
+     * This function does not call `setProgress()`.
+     * @param stage the stage of tasks to set
+     */
     static completeTasksOfStage(stage) {
         for (const key in Task.tasks) {
             const task = Task.tasks[key];
@@ -126,6 +153,12 @@ class Task {
         }
         Task.store();
     }
+    /**
+     * Move all tasks in stage `form` to stage `to`
+     * This function does not call `setStage()`.
+     * @param form the stage of tasks to move
+     * @param to the stage tasks move to
+     */
     static moveCompleteTasks(form, to) {
         let cnt = 0;
         for (const key in Task.tasks) {
@@ -137,11 +170,17 @@ class Task {
                 cnt++;
             }
         }
+        // keep numTaskInStage on track with chages to task stage
         Task.numTaskInStage[form] -= cnt;
         Task.numTaskInStage[to] += cnt;
         Task.store();
     }
-    static eraseCompleteTasksOfStage(stage) {
+    /**
+     * Delete all tasks in stage `stage`
+     * This function does not call `erase()`.
+     * @param stage the stage of tasks to delete
+     */
+    static removeCompleteTasksOfStage(stage) {
         let cnt = 0;
         for (const key in Task.tasks) {
             const task = Task.tasks[key];
@@ -154,7 +193,11 @@ class Task {
         Task.numTaskInStage[stage] -= cnt;
         Task.store();
     }
-    static eraseDone() {
+    /**
+     * Delete all tasks in stage `Stage.Done`
+     * This function does not call `erase()`.
+     */
+    static removeDone() {
         for (const key in Task.tasks) {
             const task = Task.tasks[key];
             if (task.stage === Stage.Done) {
@@ -166,18 +209,27 @@ class Task {
     }
 }
 Task.tasks = {};
+// number of task in stage
 Task.numTaskInStage = new Array(Stage.Done + 1);
+/**
+ * Viewer
+ */
 class TaskView {
     /**
      * USE `TaskView.create()` TO CREATE A VIEW.
      */
     constructor(div) {
         _TaskView_instances.add(this);
+        // elements of task div
         _TaskView_div.set(this, void 0);
         _TaskView_next_button.set(this, void 0);
         _TaskView_done_button.set(this, void 0);
         __classPrivateFieldSet(this, _TaskView_div, div, "f");
     }
+    /* change to view */
+    /**
+     * Change the color of completed/uncompleted task view
+     */
     onProgressSet() {
         if (this.range.value === this.range.max) {
             __classPrivateFieldGet(this, _TaskView_div, "f").setAttribute('data-done', '');
@@ -186,10 +238,18 @@ class TaskView {
             __classPrivateFieldGet(this, _TaskView_div, "f").removeAttribute('data-done');
         }
     }
-    erase() {
+    /**
+     * Delete the div of task
+     */
+    eraseView() {
         __classPrivateFieldGet(this, _TaskView_div, "f").remove();
     }
     /* single view functions */
+    /**
+     * Create a task view, render it, and bind events with the controller
+     * @param task date
+     * @returns rendered view
+     */
     static createView(task) {
         let div = document.importNode(TaskView.taskTemplate, true);
         let view = new TaskView(div);
@@ -212,6 +272,10 @@ class TaskView {
             }
         }
     }
+    /**
+     * Set all the view as completed
+     * This function does not call `onProgressSet()`
+     */
     static setViewsCompleted() {
         let childern = this.taskList.children;
         for (let index = 0; index < childern.length; index++) {
@@ -221,10 +285,18 @@ class TaskView {
             div.setAttribute('data-done', '');
         }
     }
-    static eraseViews() {
+    /**
+     * Clear views
+     * This function does not call `eraseView()`
+     */
+    static clearViews() {
         TaskView.taskList.innerHTML = '';
     }
-    static eraseCompletedViews() {
+    /**
+     * Clear views of completed tasks
+     * This function does not call `eraseView()`
+     */
+    static clearCompletedViews() {
         let child = this.taskList.firstElementChild;
         let lastChild = null;
         while (child) {
@@ -238,10 +310,10 @@ class TaskView {
     }
     /* page functions */
     /**
-     * Change current stage.
+     * Load page of current stage
      * @param stage stage changing to
      */
-    static changeView(stage) {
+    static changePageToStage(stage) {
         TaskView.loadView(stage);
         for (let index = 0; index <= Stage.Done; index++) {
             let elem = document.getElementById(['stage-',
@@ -267,30 +339,9 @@ class TaskView {
             TaskView.nextCompletedButton.innerText = ['To', Stage[stage + 1]].join(' ');
         }
     }
-    static initStageButtons() {
-        let stages_div = document.getElementById('stages');
-        for (let index = 0; index <= Stage.Done; index++) {
-            const stage_str = Stage[index];
-            let button = document.createElement('button');
-            button.id = ['stage-', stage_str.toLowerCase()].join('');
-            button.textContent = stage_str;
-            button.onclick = TaskController.changeToStage.bind(null, index);
-            let cntSpan = document.createElement('span');
-            cntSpan.innerText = '0';
-            button.appendChild(cntSpan);
-            stages_div.appendChild(button);
-        }
-    }
-    static bindManipulationButtons() {
-        TaskView.completeAllButton.onclick =
-            TaskController.completeTasksOfCurStage.bind(null);
-        TaskView.nextCompletedButton.onclick =
-            TaskController.advanceCompleted.bind(null);
-        TaskView.doneCompletedButton.onclick =
-            TaskController.doneCompleted.bind(null);
-        TaskView.deleteCompletedButton.onclick =
-            TaskController.deleteCompleted.bind(null);
-    }
+    /**
+     * Static update of counts (stage, undone)
+     */
     static updateCnt() {
         let undoneCount = 0;
         for (let index = 0; index <= Stage.Done; index++) {
@@ -310,16 +361,50 @@ class TaskView {
         undoneCount -= Task.numTaskInStage[Stage.Done];
         this.undoneCntDiv.innerText = undoneCount.toString();
     }
+    /* page initalizing */
+    /**
+     * Initalizing stage buttons
+     */
+    static initStageButtons() {
+        let stages_div = document.getElementById('stages');
+        for (let index = 0; index <= Stage.Done; index++) {
+            const stage_str = Stage[index];
+            let button = document.createElement('button');
+            button.id = ['stage-', stage_str.toLowerCase()].join('');
+            button.textContent = stage_str;
+            button.onclick = TaskController.changeToStage.bind(null, index);
+            let cntSpan = document.createElement('span');
+            cntSpan.innerText = '0';
+            button.appendChild(cntSpan);
+            stages_div.appendChild(button);
+        }
+    }
+    /**
+     * Bind List Manipulation Buttons
+     */
+    static bindListManipulationButtons() {
+        TaskView.completeAllButton.onclick =
+            TaskController.completeTasksOfCurStage.bind(null);
+        TaskView.nextCompletedButton.onclick =
+            TaskController.advanceCompleted.bind(null);
+        TaskView.doneCompletedButton.onclick =
+            TaskController.doneCompleted.bind(null);
+        TaskView.deleteCompletedButton.onclick =
+            TaskController.deleteCompleted.bind(null);
+    }
 }
 _TaskView_div = new WeakMap(), _TaskView_next_button = new WeakMap(), _TaskView_done_button = new WeakMap(), _TaskView_instances = new WeakSet(), _TaskView_renderDiv = function _TaskView_renderDiv(task) {
+    // task info rendering
     __classPrivateFieldGet(this, _TaskView_div, "f").setAttribute('data-name', task.name);
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-name')[0].textContent = task.name;
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-due')[0].textContent = task.due.toLocaleString();
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-description')[0].textContent = task.description;
     __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-timeleft')[0].textContent = diffTimeStr(task.due);
+    // single task manipulation buttons
     __classPrivateFieldSet(this, _TaskView_next_button, __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-next')[0], "f");
     __classPrivateFieldSet(this, _TaskView_done_button, __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-done')[0], "f");
     this.range = __classPrivateFieldGet(this, _TaskView_div, "f").getElementsByClassName('task-item-progress')[0];
+    // show/hide task manipulation buttons according to stage
     let stage = task.stage;
     if (stage >= Stage.Verify) {
         __classPrivateFieldGet(this, _TaskView_done_button, "f").style.display = 'none';
@@ -348,12 +433,17 @@ _TaskView_div = new WeakMap(), _TaskView_next_button = new WeakMap(), _TaskView_
 };
 TaskView.taskTemplate = document.getElementById('task-template').content.querySelector('.task');
 TaskView.taskList = document.getElementById('task-list');
-TaskView.addTaskSubmit = document.getElementById('add-task');
+// list manipulation buttons 
 TaskView.completeAllButton = document.getElementById('complete-all');
 TaskView.nextCompletedButton = document.getElementById('next-completed');
 TaskView.doneCompletedButton = document.getElementById('done-completed');
 TaskView.deleteCompletedButton = document.getElementById('delete-completed');
+// other elements
+TaskView.addTaskSubmit = document.getElementById('add-task');
 TaskView.undoneCntDiv = document.getElementById('undone');
+/**
+ * Controller
+ */
 class TaskController {
     constructor(task, view) {
         _TaskController_task.set(this, void 0);
@@ -361,8 +451,9 @@ class TaskController {
         __classPrivateFieldSet(this, _TaskController_task, task, "f");
         __classPrivateFieldSet(this, _TaskController_view, view, "f");
     }
+    /* single task manipulation */
     erase() {
-        __classPrivateFieldGet(this, _TaskController_view, "f").erase();
+        __classPrivateFieldGet(this, _TaskController_view, "f").eraseView();
         Task.erase(__classPrivateFieldGet(this, _TaskController_task, "f"));
         TaskView.updateCnt();
     }
@@ -372,7 +463,7 @@ class TaskController {
         __classPrivateFieldGet(this, _TaskController_task, "f").setProgress(val);
     }
     editStage(stage) {
-        __classPrivateFieldGet(this, _TaskController_view, "f").erase();
+        __classPrivateFieldGet(this, _TaskController_view, "f").eraseView();
         __classPrivateFieldGet(this, _TaskController_task, "f").setStage(stage);
         TaskView.updateCnt();
     }
@@ -404,8 +495,9 @@ class TaskController {
         TaskView.updateCnt();
         return false;
     }
+    /* task list manipulation */
     static changeToStage(stage) {
-        TaskView.changeView(stage);
+        TaskView.changePageToStage(stage);
         curStage = stage;
     }
     static completeTasksOfCurStage() {
@@ -414,23 +506,23 @@ class TaskController {
     }
     static advanceCompleted() {
         if (curStage === Stage.Done) {
-            Task.eraseDone();
-            TaskView.eraseViews();
+            Task.removeDone();
+            TaskView.clearViews();
         }
         else {
             Task.moveCompleteTasks(curStage, curStage + 1);
-            TaskView.eraseCompletedViews();
+            TaskView.clearCompletedViews();
         }
         TaskView.updateCnt();
     }
     static doneCompleted() {
         Task.moveCompleteTasks(curStage, Stage.Done);
-        TaskView.eraseCompletedViews();
+        TaskView.clearCompletedViews();
         TaskView.updateCnt();
     }
     static deleteCompleted() {
-        Task.eraseCompleteTasksOfStage(curStage);
-        TaskView.eraseCompletedViews();
+        Task.removeCompleteTasksOfStage(curStage);
+        TaskView.clearCompletedViews();
         TaskView.updateCnt();
     }
 }
@@ -439,7 +531,7 @@ _TaskController_task = new WeakMap(), _TaskController_view = new WeakMap();
 /* main */
 document.getElementById('new-task').onsubmit = TaskController.addTask;
 TaskView.initStageButtons();
-TaskView.bindManipulationButtons();
+TaskView.bindListManipulationButtons();
 Task.load();
-TaskView.changeView(curStage);
+TaskView.changePageToStage(curStage);
 TaskView.updateCnt();
