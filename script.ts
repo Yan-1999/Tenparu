@@ -454,14 +454,19 @@ class TaskView {
         TaskView.addTaskSubmit.value = ['Add task to', Stage[stage]].join(' ');
         if (stage === Stage.Done) {
             TaskView.completeAllButton.style.display = 'none';
-            TaskView.doneCompletedButton.style.display = 'none';
+            TaskView.resetAllButton.style.display = 'none';
             TaskView.deleteCompletedButton.style.display = 'none';
             TaskView.nextCompletedButton.innerText = 'Remove Done Tasks';
         } else {
             TaskView.completeAllButton.style.display = 'inline-block';
-            TaskView.doneCompletedButton.style.display = 'inline-block';
+            TaskView.resetAllButton.style.display = 'inline-block';
             TaskView.deleteCompletedButton.style.display = 'inline-block';
             TaskView.nextCompletedButton.innerText = ['To', Stage[stage + 1]].join(' ');
+        }
+        if (stage >= Stage.Verify) {
+            TaskView.doneCompletedButton.style.display = 'none';
+        } else {
+            TaskView.doneCompletedButton.style.display = 'inline-block';
         }
     }
 
