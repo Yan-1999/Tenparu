@@ -163,6 +163,21 @@ class Task {
     }
 
     /**
+     * Set all tasks in stage `stage` to 0% progress
+     * This function does not call `setProgress()`.
+     * @param stage the stage of tasks to set
+     */
+    static resetTasksOfStage(stage: Stage) {
+        for (const key in Task.tasks) {
+            const task = Task.tasks[key];
+            if (task.stage === stage) {
+                task.progress = 0;
+            }
+        }
+        Task.store();
+    }
+
+    /**
      * Move all tasks in stage `form` to stage `to`
      * This function does not call `setStage()`.
      * @param form the stage of tasks to move
@@ -230,6 +245,7 @@ class TaskView {
     static taskList = document.getElementById('task-list') as HTMLDivElement;
     // list manipulation buttons 
     static completeAllButton = document.getElementById('complete-all');
+    static resetAllButton = document.getElementById('reset-all');
     static nextCompletedButton = document.getElementById('next-completed');
     static doneCompletedButton = document.getElementById('done-completed');
     static deleteCompletedButton = document.getElementById('delete-completed');
@@ -378,6 +394,21 @@ class TaskView {
     }
 
     /**
+     * Set all the view as completed
+     * This function does not call `onProgressSet()`
+     */
+    static setViewsNotCompleted() {
+        let childern = this.taskList.children;
+        for (let index = 0; index < childern.length; index++) {
+            const div = childern[index] as HTMLDivElement;
+            let range = div.getElementsByClassName('task-item-progress')[0] as
+                HTMLInputElement;
+            range.value = '0';
+            div.removeAttribute('data-done');
+        }
+    }
+
+    /**
      * Clear views
      * This function does not call `eraseView()`
      */
@@ -482,6 +513,8 @@ class TaskView {
     static bindListManipulationButtons() {
         TaskView.completeAllButton.onclick =
             TaskController.completeTasksOfCurStage.bind(null);
+        TaskView.resetAllButton.onclick =
+            TaskController.resetTasksOfCurStage.bind(null);
         TaskView.nextCompletedButton.onclick =
             TaskController.advanceCompleted.bind(null);
         TaskView.doneCompletedButton.onclick =
@@ -571,6 +604,11 @@ class TaskController {
     static completeTasksOfCurStage() {
         Task.completeTasksOfStage(curStage);
         TaskView.setViewsCompleted();
+    }
+
+    static resetTasksOfCurStage() {
+        Task.resetTasksOfStage(curStage);
+        TaskView.setViewsNotCompleted();
     }
 
     static advanceCompleted() {
