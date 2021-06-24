@@ -130,7 +130,7 @@ class Task {
     static insert(task: Task) {
         Task.tasks[task.name] = task;
         // keep numTaskInStage on track with chages to task stage
-        Task.numTaskInStage[task.stage]++; 
+        Task.numTaskInStage[task.stage]++;
         Task.store();
     }
 
